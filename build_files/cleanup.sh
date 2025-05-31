@@ -11,7 +11,7 @@ log "Starting system cleanup"
 
 # fix os-release
 cat /usr/lib/os-release
-sed -i "s/^ID=fedora/ID=codeos\nID_LIKE=\"fedora\"/" /usr/lib/os-release
+sed -i "s/^ID=bazzite/ID=codeos/" /usr/lib/os-release
 cat /usr/lib/os-release
 
 # Remove autostart files
