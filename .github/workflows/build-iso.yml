@@ -3,6 +3,14 @@ name: Build ISOs
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: "System architecture"
+        required: true
+        type: choice
+        options:
+          - amd64
+          - arm64
   pull_request:
     branches:
       - main
@@ -22,9 +30,11 @@ concurrency:
 jobs:
   build:
     name: Build ISOs
-    runs-on: "ubuntu-24.04"
-    #strategy:
-    #  fail-fast: false
+    runs-on: ${{ inputs.platform == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [amd64,arm64]
     permissions:
       contents: read
       packages: read
@@ -35,7 +45,16 @@ jobs:
         run: |
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
 
+      - name: Install dependencies
+        if: inputs.platform == 'arm64'
+        run: |
+          set -x
+          sudo apt update -y
+          sudo apt install -y \
+            podman
+
       - name: Maximize build space
+        if: inputs.platform != 'arm64'
         uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
         with:
           remove-codeql: true
@@ -54,3 +73,13 @@ jobs:
           use-librepo: true
           config-file: ./iso.toml
           image: ${{ env.IMAGE_REGISTRY }}:${{ env.DEFAULT_TAG }}
+
+      - name: Upload ISOs and Checksum to Job Artifacts
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          path: ${{ steps.build.outputs.output-directory }}
+          if-no-files-found: error
+          retention-days: 0
+          compression-level: 0
+          overwrite: true

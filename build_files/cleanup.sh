@@ -9,6 +9,11 @@ log() {
 
 log "Starting system cleanup"
 
+# fix os-release
+cat /usr/lib/os-release
+sed -i "s/^ID=fedora/ID=codeos\nID_LIKE=\"fedora\"/" /usr/lib/os-release
+cat /usr/lib/os-release
+
 # Remove autostart files
 rm /etc/skel/.config/autostart/steam.desktop
 
